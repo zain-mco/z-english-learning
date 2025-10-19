@@ -19,25 +19,37 @@ export default function WordPage() {
   const [currentIndex, setCurrentIndex] = useState(-1);
 
   const fetchWord = useCallback(async () => {
+    if (!params.id) return;
+
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('words')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', parseInt(params.id))
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If word not found, redirect to first available word
+        if (allIds.length > 0) {
+          router.replace(`/word/${allIds[0]}`);
+          return;
+        }
+        throw error;
+      }
+
       setWord(data);
-      
-      // Save last visited word
       localStorage.setItem('lastWord', params.id);
     } catch (error) {
       console.error('Error fetching word:', error);
+      // If we have allIds, redirect to first word
+      if (allIds.length > 0) {
+        router.replace(`/word/${allIds[0]}`);
+      }
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, allIds, router]);
 
   const fetchAllIds = useCallback(async () => {
     try {
@@ -49,16 +61,38 @@ export default function WordPage() {
       if (error) throw error;
       const ids = data.map(item => item.id);
       setAllIds(ids);
+
+      // If current params.id doesn't exist in the list, redirect to first word
+      if (params.id && !ids.includes(parseInt(params.id))) {
+        if (ids.length > 0) {
+          router.replace(`/word/${ids[0]}`);
+          return;
+        }
+      }
+
       setCurrentIndex(ids.indexOf(parseInt(params.id)));
     } catch (error) {
       console.error('Error fetching IDs:', error);
     }
-  }, [params.id]);
+  }, [params.id, router]);
 
   useEffect(() => {
+    // Initial check - if no valid ID, redirect to first word
+    if (!params.id || isNaN(parseInt(params.id))) {
+      fetchAllIds();
+      return;
+    }
+
     fetchWord();
     fetchAllIds();
-  }, [fetchWord, fetchAllIds]);
+  }, [params.id]);
+
+  // Separate effect to handle redirect after allIds is loaded
+  useEffect(() => {
+    if (allIds.length > 0 && params.id && (isNaN(parseInt(params.id)) || !allIds.includes(parseInt(params.id)))) {
+      router.replace(`/word/${allIds[0]}`);
+    }
+  }, [allIds, params.id, router]);
 
   const navigateTo = (direction) => {
     const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;

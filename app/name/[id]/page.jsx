@@ -19,24 +19,37 @@ export default function NamePage() {
   const [currentIndex, setCurrentIndex] = useState(-1);
 
   const fetchName = useCallback(async () => {
+    if (!params.id) return;
+
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('names')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', parseInt(params.id))
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // If name not found, redirect to first available name
+        if (allIds.length > 0) {
+          router.replace(`/name/${allIds[0]}`);
+          return;
+        }
+        throw error;
+      }
+
       setName(data);
-      
       localStorage.setItem('lastName', params.id);
     } catch (error) {
       console.error('Error fetching name:', error);
+      // If we have allIds, redirect to first name
+      if (allIds.length > 0) {
+        router.replace(`/name/${allIds[0]}`);
+      }
     } finally {
       setLoading(false);
     }
-  }, [params.id]);
+  }, [params.id, allIds, router]);
 
   const fetchAllIds = useCallback(async () => {
     try {
@@ -48,16 +61,38 @@ export default function NamePage() {
       if (error) throw error;
       const ids = data.map(item => item.id);
       setAllIds(ids);
+
+      // If current params.id doesn't exist in the list, redirect to first name
+      if (params.id && !ids.includes(parseInt(params.id))) {
+        if (ids.length > 0) {
+          router.replace(`/name/${ids[0]}`);
+          return;
+        }
+      }
+
       setCurrentIndex(ids.indexOf(parseInt(params.id)));
     } catch (error) {
       console.error('Error fetching IDs:', error);
     }
-  }, [params.id]);
+  }, [params.id, router]);
 
   useEffect(() => {
+    // Initial check - if no valid ID, redirect to first name
+    if (!params.id || isNaN(parseInt(params.id))) {
+      fetchAllIds();
+      return;
+    }
+
     fetchName();
     fetchAllIds();
-  }, [fetchName, fetchAllIds]);
+  }, [params.id]);
+
+  // Separate effect to handle redirect after allIds is loaded
+  useEffect(() => {
+    if (allIds.length > 0 && params.id && (isNaN(parseInt(params.id)) || !allIds.includes(parseInt(params.id)))) {
+      router.replace(`/name/${allIds[0]}`);
+    }
+  }, [allIds, params.id, router]);
 
   const navigateTo = (direction) => {
     const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
