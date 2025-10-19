@@ -34,14 +34,12 @@ export default function HomePage() {
   }, [activeTab]);
 
   useEffect(() => {
-    fetchItems();
-    
     // Load last visited tab from localStorage
     const lastTab = localStorage.getItem('lastTab');
     if (lastTab) {
       setActiveTab(lastTab);
     }
-  }, [fetchItems]);
+  }, []);
 
   useEffect(() => {
     fetchItems();
