@@ -23,8 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Local env files
-.env.Local
-.env.example
+.env.local
+# .env.example  # Removed - making this file public as requested
 
 # Vercel
 .vercel
