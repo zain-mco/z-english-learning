@@ -1,0 +1,20 @@
+[
+  {
+    "word": "abundant",
+    "synonyms": ["plentiful", "ample", "copious"],
+    "explanation": "Existing or available in large quantities; plentiful",
+    "example": "The garden had an abundant supply of fresh vegetables throughout the summer."
+  },
+  {
+    "word": "achieve",
+    "synonyms": ["accomplish", "attain", "reach"],
+    "explanation": "To successfully bring about or reach a desired objective or result",
+    "example": "She worked hard to achieve her goals and finally graduated with honors."
+  },
+  {
+    "word": "benevolent",
+    "synonyms": ["kind", "generous", "charitable"],
+    "explanation": "Well-meaning and kindly; showing goodwill",
+    "example": "The benevolent donor funded the construction of a new library for the community."
+  }
+]

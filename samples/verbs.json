@@ -1,0 +1,26 @@
+[
+  {
+    "v1": "go",
+    "v1_example": "I go to school every day.",
+    "v2": "went",
+    "v2_example": "Yesterday I went to the park.",
+    "v3": "gone",
+    "v3_example": "She has gone to the market."
+  },
+  {
+    "v1": "eat",
+    "v1_example": "I eat breakfast at 7 AM.",
+    "v2": "ate",
+    "v2_example": "He ate dinner at the restaurant.",
+    "v3": "eaten",
+    "v3_example": "They have eaten all the cookies."
+  },
+  {
+    "v1": "write",
+    "v1_example": "I write in my journal daily.",
+    "v2": "wrote",
+    "v2_example": "She wrote a beautiful poem.",
+    "v3": "written",
+    "v3_example": "The book was written by a famous author."
+  }
+]

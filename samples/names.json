@@ -1,0 +1,20 @@
+[
+  {
+    "name": "happiness",
+    "synonym": ["joy", "delight"],
+    "example": "Her happiness was contagious and spread throughout the room.",
+    "source_verb": "happy"
+  },
+  {
+    "name": "creation",
+    "synonym": ["formation", "invention"],
+    "example": "The artist's creation amazed everyone at the gallery.",
+    "source_verb": "create"
+  },
+  {
+    "name": "excitement",
+    "synonym": ["enthusiasm", "thrill"],
+    "example": "The excitement before the concert was palpable.",
+    "source_verb": "excite"
+  }
+]
