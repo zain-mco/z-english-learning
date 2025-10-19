@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Plus, Edit2, Trash2, Upload, Loader2, Lock, LogOut, Search, CheckSquare, Square, XCircle } from 'lucide-react';
 import Papa from 'papaparse';
@@ -30,30 +30,7 @@ export default function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchItems();
-      setSearchQuery('');
-      setSelectedItems([]);
-    }
-  }, [activeTab, isAuthenticated]);
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('adminAuth', 'true');
-    } else {
-      alert('Incorrect password');
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('adminAuth');
-  };
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -69,6 +46,29 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchItems();
+      setSearchQuery('');
+      setSelectedItems([]);
+    }
+  }, [activeTab, isAuthenticated, fetchItems]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('adminAuth', 'true');
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    sessionStorage.removeItem('adminAuth');
   };
 
   const handleAdd = () => {

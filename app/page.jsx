@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import TabNavigation from '@/components/TabNavigation';
 import CardGrid from '@/components/CardGrid';
@@ -15,24 +15,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchItems();
-    
-    // Load last visited tab from localStorage
-    const lastTab = localStorage.getItem('lastTab');
-    if (lastTab) {
-      setActiveTab(lastTab);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchItems();
-    setSearchQuery('');
-    // Save current tab to localStorage
-    localStorage.setItem('lastTab', activeTab);
-  }, [activeTab]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -48,7 +31,24 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchItems();
+    
+    // Load last visited tab from localStorage
+    const lastTab = localStorage.getItem('lastTab');
+    if (lastTab) {
+      setActiveTab(lastTab);
+    }
+  }, [fetchItems]);
+
+  useEffect(() => {
+    fetchItems();
+    setSearchQuery('');
+    // Save current tab to localStorage
+    localStorage.setItem('lastTab', activeTab);
+  }, [activeTab, fetchItems]);
 
   // Filter items based on search query
   const filteredItems = items.filter(item => {
@@ -124,7 +124,7 @@ export default function HomePage() {
             </div>
           ) : filteredItems.length === 0 && searchQuery ? (
             <div className="text-center py-20">
-              <p className="text-gray-500 text-lg">No {activeTab} found matching "{searchQuery}"</p>
+              <p className="text-gray-500 text-lg">No {activeTab} found matching &quot;{searchQuery}&quot;</p>
             </div>
           ) : (
             <CardGrid items={filteredItems} type={activeTab} />

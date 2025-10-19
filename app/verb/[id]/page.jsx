@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import TTSButton from '@/components/TTSButton';
@@ -18,12 +18,7 @@ export default function VerbPage() {
   const [allIds, setAllIds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
-  useEffect(() => {
-    fetchVerb();
-    fetchAllIds();
-  }, [params.id]);
-
-  const fetchVerb = async () => {
+  const fetchVerb = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -41,9 +36,9 @@ export default function VerbPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
 
-  const fetchAllIds = async () => {
+  const fetchAllIds = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('verbs')
@@ -57,7 +52,12 @@ export default function VerbPage() {
     } catch (error) {
       console.error('Error fetching IDs:', error);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchVerb();
+    fetchAllIds();
+  }, [fetchVerb, fetchAllIds]);
 
   const navigateTo = (direction) => {
     const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
