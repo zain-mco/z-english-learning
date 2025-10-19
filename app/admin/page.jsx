@@ -143,6 +143,76 @@ export default function AdminPage() {
     }
   };
 
+  const handleRemoveDuplicates = async () => {
+    if (items.length === 0) {
+      alert('No items to check for duplicates');
+      return;
+    }
+
+    const confirmed = confirm(`This will find and remove duplicate ${activeTab}, keeping only the most recent entry for each. Continue?`);
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      const duplicatesToDelete = [];
+      const seenKeys = new Map();
+
+      // Sort by created_at descending (newest first) or by id descending
+      const sortedItems = [...items].sort((a, b) => {
+        // Try to sort by created_at first, fallback to id
+        if (a.created_at && b.created_at) {
+          return new Date(b.created_at) - new Date(a.created_at);
+        }
+        return b.id - a.id;
+      });
+
+      // Find duplicates based on table type
+      for (const item of sortedItems) {
+        let key;
+        
+        if (activeTab === 'words') {
+          key = item.word?.toLowerCase();
+        } else if (activeTab === 'verbs') {
+          key = `${item.v1}-${item.v2}-${item.v3}`.toLowerCase();
+        } else if (activeTab === 'names') {
+          key = item.name?.toLowerCase();
+        }
+
+        if (key) {
+          if (seenKeys.has(key)) {
+            // This is a duplicate, mark for deletion
+            duplicatesToDelete.push(item.id);
+          } else {
+            // This is the first (newest) occurrence, keep it
+            seenKeys.set(key, item.id);
+          }
+        }
+      }
+
+      if (duplicatesToDelete.length === 0) {
+        alert('No duplicates found!');
+        setLoading(false);
+        return;
+      }
+
+      // Delete the duplicates
+      const { error } = await supabase
+        .from(activeTab)
+        .delete()
+        .in('id', duplicatesToDelete);
+
+      if (error) throw error;
+
+      fetchItems();
+      alert(`Successfully removed ${duplicatesToDelete.length} duplicate(s)!`);
+    } catch (error) {
+      console.error('Error removing duplicates:', error);
+      alert('Error removing duplicates: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleSelectItem = (id) => {
     setSelectedItems(prev =>
       prev.includes(id) ? prev.filter(itemId => itemId !== id) : [...prev, id]
@@ -162,14 +232,58 @@ export default function AdminPage() {
 
     try {
       if (editingItem) {
+        // Update existing item
         const { error } = await supabase
           .from(activeTab)
           .update(formData)
           .eq('id', editingItem.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from(activeTab).insert([formData]);
-        if (error) throw error;
+        // Check for duplicates before inserting
+        let existingItem = null;
+
+        if (activeTab === 'words') {
+          const { data } = await supabase
+            .from(activeTab)
+            .select('*')
+            .eq('word', formData.word)
+            .single();
+          existingItem = data;
+        } else if (activeTab === 'verbs') {
+          const { data } = await supabase
+            .from(activeTab)
+            .select('*')
+            .eq('v1', formData.v1)
+            .eq('v2', formData.v2)
+            .eq('v3', formData.v3)
+            .single();
+          existingItem = data;
+        } else if (activeTab === 'names') {
+          const { data } = await supabase
+            .from(activeTab)
+            .select('*')
+            .eq('name', formData.name)
+            .single();
+          existingItem = data;
+        }
+
+        if (existingItem) {
+          // Duplicate found - ask user if they want to update
+          const shouldUpdate = confirm(`A ${activeTab.slice(0, -1)} with this ${activeTab === 'words' ? 'word' : activeTab === 'verbs' ? 'verb conjugation' : 'name'} already exists. Do you want to update it?`);
+          if (shouldUpdate) {
+            const { error } = await supabase
+              .from(activeTab)
+              .update(formData)
+              .eq('id', existingItem.id);
+            if (error) throw error;
+          } else {
+            return; // User cancelled
+          }
+        } else {
+          // No duplicate, insert new record
+          const { error } = await supabase.from(activeTab).insert([formData]);
+          if (error) throw error;
+        }
       }
 
       setShowModal(false);
@@ -211,10 +325,61 @@ export default function AdminPage() {
             });
           }
 
-          const { error } = await supabase.from(activeTab).insert(jsonData);
-          if (error) throw error;
+          // Process each item to check for duplicates and update/insert accordingly
+          let updatedCount = 0;
+          let insertedCount = 0;
+
+          for (const item of jsonData) {
+            try {
+              let existingItem = null;
+
+              // Check for existing record based on table type
+              if (activeTab === 'words') {
+                const { data } = await supabase
+                  .from(activeTab)
+                  .select('*')
+                  .eq('word', item.word)
+                  .single();
+                existingItem = data;
+              } else if (activeTab === 'verbs') {
+                const { data } = await supabase
+                  .from(activeTab)
+                  .select('*')
+                  .eq('v1', item.v1)
+                  .eq('v2', item.v2)
+                  .eq('v3', item.v3)
+                  .single();
+                existingItem = data;
+              } else if (activeTab === 'names') {
+                const { data } = await supabase
+                  .from(activeTab)
+                  .select('*')
+                  .eq('name', item.name)
+                  .single();
+                existingItem = data;
+              }
+
+              if (existingItem) {
+                // Update existing record
+                const { error } = await supabase
+                  .from(activeTab)
+                  .update(item)
+                  .eq('id', existingItem.id);
+                if (error) throw error;
+                updatedCount++;
+              } else {
+                // Insert new record
+                const { error } = await supabase.from(activeTab).insert([item]);
+                if (error) throw error;
+                insertedCount++;
+              }
+            } catch (itemError) {
+              console.error('Error processing item:', item, itemError);
+            }
+          }
+
           fetchItems();
-          alert('Bulk upload successful!');
+          alert(`Upload successful! Inserted: ${insertedCount}, Updated: ${updatedCount}`);
         } catch (error) {
           console.error('Error uploading JSON:', error);
           alert('Error uploading JSON: ' + error.message);
@@ -254,10 +419,61 @@ export default function AdminPage() {
                 return processed;
               });
 
-            const { error } = await supabase.from(activeTab).insert(processedData);
-            if (error) throw error;
+            // Process each item to check for duplicates and update/insert accordingly
+            let updatedCount = 0;
+            let insertedCount = 0;
+
+            for (const item of processedData) {
+              try {
+                let existingItem = null;
+
+                // Check for existing record based on table type
+                if (activeTab === 'words') {
+                  const { data } = await supabase
+                    .from(activeTab)
+                    .select('*')
+                    .eq('word', item.word)
+                    .single();
+                  existingItem = data;
+                } else if (activeTab === 'verbs') {
+                  const { data } = await supabase
+                    .from(activeTab)
+                    .select('*')
+                    .eq('v1', item.v1)
+                    .eq('v2', item.v2)
+                    .eq('v3', item.v3)
+                    .single();
+                  existingItem = data;
+                } else if (activeTab === 'names') {
+                  const { data } = await supabase
+                    .from(activeTab)
+                    .select('*')
+                    .eq('name', item.name)
+                    .single();
+                  existingItem = data;
+                }
+
+                if (existingItem) {
+                  // Update existing record
+                  const { error } = await supabase
+                    .from(activeTab)
+                    .update(item)
+                    .eq('id', existingItem.id);
+                  if (error) throw error;
+                  updatedCount++;
+                } else {
+                  // Insert new record
+                  const { error } = await supabase.from(activeTab).insert([item]);
+                  if (error) throw error;
+                  insertedCount++;
+                }
+              } catch (itemError) {
+                console.error('Error processing item:', item, itemError);
+              }
+            }
+
             fetchItems();
-            alert('CSV upload successful!');
+            alert(`CSV upload successful! Inserted: ${insertedCount}, Updated: ${updatedCount}`);
           } catch (error) {
             console.error('Error uploading CSV:', error);
             alert('Error uploading CSV: ' + error.message);
@@ -427,6 +643,15 @@ export default function AdminPage() {
           >
             <Trash2 size={20} />
             Remove Selected ({selectedItems.length})
+          </button>
+
+          <button
+            onClick={handleRemoveDuplicates}
+            className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-all hover:scale-105 shadow-md hover:shadow-lg"
+            title="Remove duplicate entries, keeping the most recent one"
+          >
+            <Trash2 size={20} />
+            Remove Duplicates
           </button>
 
           <button
