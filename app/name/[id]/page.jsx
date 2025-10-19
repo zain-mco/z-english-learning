@@ -77,22 +77,31 @@ export default function NamePage() {
   }, [params.id, router]);
 
   useEffect(() => {
-    // Initial check - if no valid ID, redirect to first name
+    // Always fetch allIds first
+    fetchAllIds();
+  }, [fetchAllIds]);
+
+  // Only fetch name after we have allIds and verified the ID exists
+  useEffect(() => {
+    if (allIds.length === 0) return; // Wait for allIds to load
+
     if (!params.id || isNaN(parseInt(params.id))) {
-      fetchAllIds();
+      // Invalid ID, redirect to first name
+      router.replace(`/name/${allIds[0]}`);
       return;
     }
 
-    fetchName();
-    fetchAllIds();
-  }, [params.id]);
-
-  // Separate effect to handle redirect after allIds is loaded
-  useEffect(() => {
-    if (allIds.length > 0 && params.id && (isNaN(parseInt(params.id)) || !allIds.includes(parseInt(params.id)))) {
+    const numericId = parseInt(params.id);
+    if (!allIds.includes(numericId)) {
+      // ID doesn't exist in database, redirect to first name
+      console.log(`Name ID ${numericId} not found, redirecting to first name`);
       router.replace(`/name/${allIds[0]}`);
+      return;
     }
-  }, [allIds, params.id, router]);
+
+    // ID is valid and exists, fetch it
+    fetchName();
+  }, [allIds, params.id, fetchName, router]);
 
   const navigateTo = (direction) => {
     const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
@@ -183,11 +192,10 @@ export default function NamePage() {
             <button
               onClick={() => navigateTo('prev')}
               disabled={currentIndex <= 0}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                currentIndex <= 0
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${currentIndex <= 0
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-primary to-emerald-600 text-white hover:from-primary-dark hover:to-emerald-700 hover:scale-105 shadow-md hover:shadow-lg'
-              }`}
+                }`}
             >
               <ChevronLeft size={20} />
               Previous
@@ -200,11 +208,10 @@ export default function NamePage() {
             <button
               onClick={() => navigateTo('next')}
               disabled={currentIndex >= allIds.length - 1}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                currentIndex >= allIds.length - 1
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${currentIndex >= allIds.length - 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-primary to-emerald-600 text-white hover:from-primary-dark hover:to-emerald-700 hover:scale-105 shadow-md hover:shadow-lg'
-              }`}
+                }`}
             >
               Next
               <ChevronRight size={20} />

@@ -14,9 +14,20 @@ export default function HomePage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load last tab from localStorage on mount (client-side only)
+  useEffect(() => {
+    const lastTab = localStorage.getItem('lastTab');
+    if (lastTab && (lastTab === 'words' || lastTab === 'verbs' || lastTab === 'names')) {
+      setActiveTab(lastTab);
+    }
+    setIsInitialized(true);
+  }, []);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
+    setItems([]); // Clear items immediately when fetching new data
     try {
       const { data, error } = await supabase
         .from(activeTab)
@@ -34,19 +45,13 @@ export default function HomePage() {
   }, [activeTab]);
 
   useEffect(() => {
-    // Load last visited tab from localStorage
-    const lastTab = localStorage.getItem('lastTab');
-    if (lastTab) {
-      setActiveTab(lastTab);
-    }
-  }, []);
-
-  useEffect(() => {
+    if (!isInitialized) return; // Don't fetch until we've loaded the correct tab
+    
     fetchItems();
     setSearchQuery('');
     // Save current tab to localStorage
     localStorage.setItem('lastTab', activeTab);
-  }, [activeTab, fetchItems]);
+  }, [activeTab, fetchItems, isInitialized]);
 
   // Filter items based on search query
   const filteredItems = items.filter(item => {

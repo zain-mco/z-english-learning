@@ -18,11 +18,14 @@ export default function CardGrid({ items, type }) {
   const getDisplayText = (item) => {
     switch (type) {
       case 'words':
-        return { title: item.word, subtitle: item.explanation };
+        return { title: item.word || 'Unknown', subtitle: item.explanation || '' };
       case 'verbs':
-        return { title: `${item.v1} / ${item.v2} / ${item.v3}`, subtitle: item.v1_example };
+        return { 
+          title: `${item.v1 || '...'} / ${item.v2 || '...'} / ${item.v3 || '...'}`, 
+          subtitle: item.v1_example || 'Click to view details' 
+        };
       case 'names':
-        return { title: item.name, subtitle: item.example };
+        return { title: item.name || 'Unknown', subtitle: item.example || '' };
       default:
         return { title: 'Unknown', subtitle: '' };
     }

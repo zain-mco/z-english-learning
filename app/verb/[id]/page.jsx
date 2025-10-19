@@ -18,8 +18,18 @@ export default function VerbPage() {
   const [allIds, setAllIds] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
+  // Clean up invalid localStorage on mount
+  useEffect(() => {
+    const lastVerb = localStorage.getItem('lastVerb');
+    // Remove if it's not a valid number or if it's the problematic ID 1003
+    if (lastVerb && (isNaN(parseInt(lastVerb)) || parseInt(lastVerb) === 1003)) {
+      console.log('Cleaning up invalid localStorage verb ID:', lastVerb);
+      localStorage.removeItem('lastVerb');
+    }
+  }, []);
+
   const fetchVerb = useCallback(async () => {
-    if (!params.id) return;
+    if (!params.id || isNaN(parseInt(params.id))) return;
 
     setLoading(true);
     try {
@@ -77,22 +87,31 @@ export default function VerbPage() {
   }, [params.id, router]);
 
   useEffect(() => {
-    // Initial check - if no valid ID, redirect to first verb
+    // Always fetch allIds first
+    fetchAllIds();
+  }, [fetchAllIds]);
+
+  // Only fetch verb after we have allIds and verified the ID exists
+  useEffect(() => {
+    if (allIds.length === 0) return; // Wait for allIds to load
+
     if (!params.id || isNaN(parseInt(params.id))) {
-      fetchAllIds();
+      // Invalid ID, redirect to first verb
+      router.replace(`/verb/${allIds[0]}`);
       return;
     }
 
-    fetchVerb();
-    fetchAllIds();
-  }, [params.id]);
-
-  // Separate effect to handle redirect after allIds is loaded
-  useEffect(() => {
-    if (allIds.length > 0 && params.id && (isNaN(parseInt(params.id)) || !allIds.includes(parseInt(params.id)))) {
+    const numericId = parseInt(params.id);
+    if (!allIds.includes(numericId)) {
+      // ID doesn't exist in database, redirect to first verb
+      console.log(`Verb ID ${numericId} not found, redirecting to first verb`);
       router.replace(`/verb/${allIds[0]}`);
+      return;
     }
-  }, [allIds, params.id, router]);
+
+    // ID is valid and exists, fetch it
+    fetchVerb();
+  }, [allIds, params.id, fetchVerb, router]);
 
   const navigateTo = (direction) => {
     const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
@@ -156,7 +175,7 @@ export default function VerbPage() {
                     <TTSButton text={conj.verb} label={`Play ${conj.label.split(' ')[0]}`} />
                   </div>
                 </div>
-                
+
                 {conj.example && (
                   <div>
                     <h3 className="text-sm font-medium text-gray-600 mb-2">Example:</h3>
@@ -175,11 +194,10 @@ export default function VerbPage() {
             <button
               onClick={() => navigateTo('prev')}
               disabled={currentIndex <= 0}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                currentIndex <= 0
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${currentIndex <= 0
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-primary to-emerald-600 text-white hover:from-primary-dark hover:to-emerald-700 hover:scale-105 shadow-md hover:shadow-lg'
-              }`}
+                }`}
             >
               <ChevronLeft size={20} />
               Previous
@@ -192,11 +210,10 @@ export default function VerbPage() {
             <button
               onClick={() => navigateTo('next')}
               disabled={currentIndex >= allIds.length - 1}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-                currentIndex >= allIds.length - 1
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${currentIndex >= allIds.length - 1
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-primary to-emerald-600 text-white hover:from-primary-dark hover:to-emerald-700 hover:scale-105 shadow-md hover:shadow-lg'
-              }`}
+                }`}
             >
               Next
               <ChevronRight size={20} />
