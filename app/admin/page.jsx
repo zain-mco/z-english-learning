@@ -174,8 +174,8 @@ export default function AdminPage() {
           key = item.title?.toLowerCase();
         } else if (activeTab === 'verbs') {
           key = `${item.v1}-${item.v2}-${item.v3}`.toLowerCase();
-        } else if (activeTab === 'names') {
-          key = item.name?.toLowerCase();
+        } else if (activeTab === 'notes') {
+          key = item.title?.toLowerCase();
         }
 
         if (key) {
@@ -258,11 +258,11 @@ export default function AdminPage() {
             .eq('v3', formData.v3)
             .single();
           existingItem = data;
-        } else if (activeTab === 'names') {
+        } else if (activeTab === 'notes') {
           const { data } = await supabase
             .from(activeTab)
             .select('*')
-            .eq('name', formData.name)
+            .eq('title', formData.title)
             .single();
           existingItem = data;
         }
@@ -350,11 +350,11 @@ export default function AdminPage() {
                   .eq('v3', item.v3)
                   .single();
                 existingItem = data;
-              } else if (activeTab === 'names') {
+              } else if (activeTab === 'notes') {
                 const { data } = await supabase
                   .from(activeTab)
                   .select('*')
-                  .eq('name', item.name)
+                  .eq('title', item.title)
                   .single();
                 existingItem = data;
               }
@@ -408,9 +408,6 @@ export default function AdminPage() {
                     throw new Error('CSV must contain title and content columns for notes');
                   }
                 }
-                if (activeTab === 'names' && row.synonym) {
-                  processed.synonym = row.synonym.split(',').map(s => s.trim());
-                }
                 // Remove any invalid columns for verbs table
                 if (activeTab === 'verbs') {
                   // Only keep valid columns
@@ -424,6 +421,9 @@ export default function AdminPage() {
                   if (!processed.v1 || !processed.v2 || !processed.v3) {
                     throw new Error('CSV must contain v1, v2, and v3 columns for verbs');
                   }
+                }
+                if (activeTab === 'names' && row.synonym) {
+                  processed.synonym = row.synonym.split(',').map(s => s.trim());
                 }
                 return processed;
               });
