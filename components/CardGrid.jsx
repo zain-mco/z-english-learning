@@ -17,8 +17,7 @@ export default function CardGrid({ items, type }) {
 
   const getDisplayText = (item) => {
     switch (type) {
-      case 'words':
-        return { title: item.word || 'Unknown', subtitle: item.explanation || '' };
+
       case 'verbs':
         return { 
           title: `${item.v1 || '...'} / ${item.v2 || '...'} / ${item.v3 || '...'}`, 
@@ -38,7 +37,7 @@ export default function CardGrid({ items, type }) {
         return (
           <Link
             key={item.id}
-            href={`/${type === 'words' ? 'word' : type === 'verbs' ? 'verb' : 'name'}/${item.id}`}
+            href={`/${type === 'names' ? 'name' : 'verb'}/${item.id}`}
             className="group"
             style={{ animationDelay: `${index * 50}ms` }}
           >

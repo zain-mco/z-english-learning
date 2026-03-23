@@ -20,7 +20,7 @@ export default function TabNavigation({ activeTab, onTabChange }) {
   }, []);
 
   const tabs = [
-    { id: 'words', label: 'Words', icon: '📚' },
+    { id: 'notes', label: 'Notes', icon: '📝' },
     { id: 'verbs', label: 'Verbs', icon: '⚡' },
     { id: 'names', label: 'Names', icon: '🏷️' },
   ];

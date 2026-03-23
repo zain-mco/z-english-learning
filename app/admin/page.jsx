@@ -170,8 +170,8 @@ export default function AdminPage() {
       for (const item of sortedItems) {
         let key;
         
-        if (activeTab === 'words') {
-          key = item.word?.toLowerCase();
+        if (activeTab === 'notes') {
+          key = item.title?.toLowerCase();
         } else if (activeTab === 'verbs') {
           key = `${item.v1}-${item.v2}-${item.v3}`.toLowerCase();
         } else if (activeTab === 'names') {
@@ -242,11 +242,11 @@ export default function AdminPage() {
         // Check for duplicates before inserting
         let existingItem = null;
 
-        if (activeTab === 'words') {
+        if (activeTab === 'notes') {
           const { data } = await supabase
             .from(activeTab)
             .select('*')
-            .eq('word', formData.word)
+            .eq('title', formData.title)
             .single();
           existingItem = data;
         } else if (activeTab === 'verbs') {
@@ -269,7 +269,7 @@ export default function AdminPage() {
 
         if (existingItem) {
           // Duplicate found - ask user if they want to update
-          const shouldUpdate = confirm(`A ${activeTab.slice(0, -1)} with this ${activeTab === 'words' ? 'word' : activeTab === 'verbs' ? 'verb conjugation' : 'name'} already exists. Do you want to update it?`);
+          const shouldUpdate = confirm(`A ${activeTab.slice(0, -1)} with this ${activeTab === 'notes' ? 'title' : activeTab === 'verbs' ? 'verb conjugation' : 'name'} already exists. Do you want to update it?`);
           if (shouldUpdate) {
             const { error } = await supabase
               .from(activeTab)
@@ -334,11 +334,11 @@ export default function AdminPage() {
               let existingItem = null;
 
               // Check for existing record based on table type
-              if (activeTab === 'words') {
+              if (activeTab === 'notes') {
                 const { data } = await supabase
                   .from(activeTab)
                   .select('*')
-                  .eq('word', item.word)
+                  .eq('title', item.title)
                   .single();
                 existingItem = data;
               } else if (activeTab === 'verbs') {
@@ -396,8 +396,17 @@ export default function AdminPage() {
               .map(row => {
                 const processed = { ...row };
                 // Convert comma-separated strings to arrays for synonyms
-                if (activeTab === 'words' && row.synonyms) {
-                  processed.synonyms = row.synonyms.split(',').map(s => s.trim());
+                // Remove any invalid columns for notes table
+                if (activeTab === 'notes') {
+                  const validColumns = ['title', 'content'];
+                  Object.keys(processed).forEach(key => {
+                    if (!validColumns.includes(key)) {
+                      delete processed[key];
+                    }
+                  });
+                  if (!processed.title || !processed.content) {
+                    throw new Error('CSV must contain title and content columns for notes');
+                  }
                 }
                 if (activeTab === 'names' && row.synonym) {
                   processed.synonym = row.synonym.split(',').map(s => s.trim());
@@ -490,8 +499,8 @@ export default function AdminPage() {
 
   const getEmptyForm = () => {
     switch (activeTab) {
-      case 'words':
-        return { word: '', synonyms: [], explanation: '', example: '' };
+      case 'notes':
+        return { title: '', content: '' };
       case 'verbs':
         return { v1: '', v1_example: '', v2: '', v2_example: '', v3: '', v3_example: '' };
       case 'names':
@@ -507,12 +516,10 @@ export default function AdminPage() {
     const query = searchQuery.toLowerCase();
 
     switch (activeTab) {
-      case 'words':
+      case 'notes':
         return (
-          item.word?.toLowerCase().includes(query) ||
-          item.synonyms?.some(syn => syn.toLowerCase().includes(query)) ||
-          item.explanation?.toLowerCase().includes(query) ||
-          item.example?.toLowerCase().includes(query)
+          item.title?.toLowerCase().includes(query) ||
+          item.content?.toLowerCase().includes(query)
         );
       case 'verbs':
         return (
@@ -584,7 +591,7 @@ export default function AdminPage() {
 
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 bg-gradient-to-r from-gray-50 to-emerald-50/50 p-2 rounded-2xl shadow-sm border border-gray-200/50">
-          {['words', 'verbs', 'names'].map((tab) => (
+          {['notes', 'verbs', 'names'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -771,8 +778,8 @@ export default function AdminPage() {
 
   function getTableHeaders() {
     switch (activeTab) {
-      case 'words':
-        return ['Word', 'Synonyms', 'Explanation', 'Example'];
+      case 'notes':
+        return ['Title', 'Content'];
       case 'verbs':
         return ['V1', 'V1 Example', 'V2', 'V2 Example', 'V3', 'V3 Example'];
       case 'names':
@@ -784,13 +791,11 @@ export default function AdminPage() {
 
   function renderTableRow(item) {
     switch (activeTab) {
-      case 'words':
+      case 'notes':
         return (
           <>
-            <td className="px-6 py-4 font-medium text-gray-900">{item.word}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm">{item.synonyms?.join(', ') || '-'}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.explanation}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.example}</td>
+            <td className="px-6 py-4 font-medium text-gray-900">{item.title}</td>
+            <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.content}</td>
           </>
         );
       case 'verbs':
@@ -822,35 +827,21 @@ export default function AdminPage() {
     const inputClass = "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none";
 
     switch (activeTab) {
-      case 'words':
+      case 'notes':
         return (
           <>
             <input
               type="text"
-              placeholder="Word"
-              value={formData.word || ''}
-              onChange={(e) => setFormData({ ...formData, word: e.target.value })}
+              placeholder="Title"
+              value={formData.title || ''}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className={inputClass + " mb-4"}
               required
             />
-            <input
-              type="text"
-              placeholder="Synonyms (comma-separated)"
-              value={formData.synonyms?.join(', ') || ''}
-              onChange={(e) => setFormData({ ...formData, synonyms: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-              className={inputClass + " mb-4"}
-            />
             <textarea
-              placeholder="Explanation"
-              value={formData.explanation || ''}
-              onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-              className={inputClass + " mb-4 min-h-24"}
-              required
-            />
-            <textarea
-              placeholder="Example"
-              value={formData.example || ''}
-              onChange={(e) => setFormData({ ...formData, example: e.target.value })}
+              placeholder="Content"
+              value={formData.content || ''}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               className={inputClass + " min-h-24"}
               required
             />

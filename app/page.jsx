@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import TabNavigation from '@/components/TabNavigation';
 import CardGrid from '@/components/CardGrid';
+import NotesPanel from '@/components/NotesPanel';
 import { Loader2, Search } from 'lucide-react';
 
 /**
  * Main Home Page with Tab Navigation
  */
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState('words');
+  const [activeTab, setActiveTab] = useState('notes');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,7 +20,7 @@ export default function HomePage() {
   // Load last tab from localStorage on mount (client-side only)
   useEffect(() => {
     const lastTab = localStorage.getItem('lastTab');
-    if (lastTab && (lastTab === 'words' || lastTab === 'verbs' || lastTab === 'names')) {
+    if (lastTab && (lastTab === 'notes' || lastTab === 'verbs' || lastTab === 'names')) {
       setActiveTab(lastTab);
     }
     setIsInitialized(true);
@@ -59,12 +60,10 @@ export default function HomePage() {
     const query = searchQuery.toLowerCase();
 
     switch (activeTab) {
-      case 'words':
+      case 'notes':
         return (
-          item.word?.toLowerCase().includes(query) ||
-          item.synonyms?.some(syn => syn.toLowerCase().includes(query)) ||
-          item.explanation?.toLowerCase().includes(query) ||
-          item.example?.toLowerCase().includes(query)
+          item.title?.toLowerCase().includes(query) ||
+          item.content?.toLowerCase().includes(query)
         );
       case 'verbs':
         return (
@@ -129,6 +128,8 @@ export default function HomePage() {
             <div className="text-center py-20">
               <p className="text-gray-500 text-lg">No {activeTab} found matching &quot;{searchQuery}&quot;</p>
             </div>
+          ) : activeTab === 'notes' ? (
+            <NotesPanel notes={filteredItems} onRefresh={fetchItems} />
           ) : (
             <CardGrid items={filteredItems} type={activeTab} />
           )}
