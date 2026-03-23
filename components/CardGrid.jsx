@@ -24,8 +24,7 @@ export default function CardGrid({ items, type }) {
           title: `${item.v1 || '...'} / ${item.v2 || '...'} / ${item.v3 || '...'}`, 
           subtitle: item.v1_example || 'Click to view details' 
         };
-      case 'names':
-        return { title: item.name || 'Unknown', subtitle: item.example || '' };
+
       default:
         return { title: 'Unknown', subtitle: '' };
     }
@@ -38,7 +37,7 @@ export default function CardGrid({ items, type }) {
         return (
           <Link
             key={item.id}
-            href={`/${type === 'words' ? 'word' : type === 'verbs' ? 'verb' : 'name'}/${item.id}`}
+            href={`/${type === 'words' ? 'word' : 'verb'}/${item.id}`}
             className="group"
             style={{ animationDelay: `${index * 50}ms` }}
           >

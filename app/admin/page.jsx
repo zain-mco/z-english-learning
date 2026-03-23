@@ -174,8 +174,8 @@ export default function AdminPage() {
           key = item.word?.toLowerCase();
         } else if (activeTab === 'verbs') {
           key = `${item.v1}-${item.v2}-${item.v3}`.toLowerCase();
-        } else if (activeTab === 'names') {
-          key = item.name?.toLowerCase();
+        } else if (activeTab === 'notes') {
+          key = item.title?.toLowerCase();
         }
 
         if (key) {
@@ -258,18 +258,18 @@ export default function AdminPage() {
             .eq('v3', formData.v3)
             .single();
           existingItem = data;
-        } else if (activeTab === 'names') {
+        } else if (activeTab === 'notes') {
           const { data } = await supabase
             .from(activeTab)
             .select('*')
-            .eq('name', formData.name)
+            .eq('title', formData.title)
             .single();
           existingItem = data;
         }
 
         if (existingItem) {
           // Duplicate found - ask user if they want to update
-          const shouldUpdate = confirm(`A ${activeTab.slice(0, -1)} with this ${activeTab === 'words' ? 'word' : activeTab === 'verbs' ? 'verb conjugation' : 'name'} already exists. Do you want to update it?`);
+          const shouldUpdate = confirm(`A ${activeTab.slice(0, -1)} with this ${activeTab === 'words' ? 'word' : activeTab === 'verbs' ? 'verb conjugation' : 'title'} already exists. Do you want to update it?`);
           if (shouldUpdate) {
             const { error } = await supabase
               .from(activeTab)
@@ -350,11 +350,11 @@ export default function AdminPage() {
                   .eq('v3', item.v3)
                   .single();
                 existingItem = data;
-              } else if (activeTab === 'names') {
+              } else if (activeTab === 'notes') {
                 const { data } = await supabase
                   .from(activeTab)
                   .select('*')
-                  .eq('name', item.name)
+                  .eq('title', item.title)
                   .single();
                 existingItem = data;
               }
@@ -399,9 +399,6 @@ export default function AdminPage() {
                 if (activeTab === 'words' && row.synonyms) {
                   processed.synonyms = row.synonyms.split(',').map(s => s.trim());
                 }
-                if (activeTab === 'names' && row.synonym) {
-                  processed.synonym = row.synonym.split(',').map(s => s.trim());
-                }
                 // Remove any invalid columns for verbs table
                 if (activeTab === 'verbs') {
                   // Only keep valid columns
@@ -414,6 +411,18 @@ export default function AdminPage() {
                   // Validate required fields
                   if (!processed.v1 || !processed.v2 || !processed.v3) {
                     throw new Error('CSV must contain v1, v2, and v3 columns for verbs');
+                  }
+                }
+                // Remove any invalid columns for notes table
+                if (activeTab === 'notes') {
+                  const validColumns = ['title', 'content'];
+                  Object.keys(processed).forEach(key => {
+                    if (!validColumns.includes(key)) {
+                      delete processed[key];
+                    }
+                  });
+                  if (!processed.title || !processed.content) {
+                    throw new Error('CSV must contain title and content columns for notes');
                   }
                 }
                 return processed;
@@ -494,8 +503,8 @@ export default function AdminPage() {
         return { word: '', synonyms: [], explanation: '', example: '' };
       case 'verbs':
         return { v1: '', v1_example: '', v2: '', v2_example: '', v3: '', v3_example: '' };
-      case 'names':
-        return { name: '', synonym: [], example: '', source_verb: '' };
+      case 'notes':
+        return { title: '', content: '' };
       default:
         return {};
     }
@@ -523,12 +532,10 @@ export default function AdminPage() {
           item.v2_example?.toLowerCase().includes(query) ||
           item.v3_example?.toLowerCase().includes(query)
         );
-      case 'names':
+      case 'notes':
         return (
-          item.name?.toLowerCase().includes(query) ||
-          item.synonym?.some(syn => syn.toLowerCase().includes(query)) ||
-          item.example?.toLowerCase().includes(query) ||
-          item.source_verb?.toLowerCase().includes(query)
+          item.title?.toLowerCase().includes(query) ||
+          item.content?.toLowerCase().includes(query)
         );
       default:
         return true;
@@ -584,7 +591,7 @@ export default function AdminPage() {
 
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 bg-gradient-to-r from-gray-50 to-emerald-50/50 p-2 rounded-2xl shadow-sm border border-gray-200/50">
-          {['words', 'verbs', 'names'].map((tab) => (
+          {['words', 'verbs', 'notes'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -775,8 +782,8 @@ export default function AdminPage() {
         return ['Word', 'Synonyms', 'Explanation', 'Example'];
       case 'verbs':
         return ['V1', 'V1 Example', 'V2', 'V2 Example', 'V3', 'V3 Example'];
-      case 'names':
-        return ['Name', 'Synonyms', 'Example', 'Source Verb'];
+      case 'notes':
+        return ['Title', 'Content'];
       default:
         return [];
     }
@@ -804,13 +811,11 @@ export default function AdminPage() {
             <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.v3_example}</td>
           </>
         );
-      case 'names':
+      case 'notes':
         return (
           <>
-            <td className="px-6 py-4 font-medium text-gray-900">{item.name}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm">{item.synonym?.join(', ') || '-'}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.example}</td>
-            <td className="px-6 py-4 text-gray-600 text-sm">{item.source_verb || '-'}</td>
+            <td className="px-6 py-4 font-medium text-gray-900">{item.title}</td>
+            <td className="px-6 py-4 text-gray-600 text-sm max-w-xs truncate">{item.content}</td>
           </>
         );
       default:
@@ -912,37 +917,23 @@ export default function AdminPage() {
             </div>
           </>
         );
-      case 'names':
+      case 'notes':
         return (
           <>
             <input
               type="text"
-              placeholder="Name"
-              value={formData.name || ''}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Title"
+              value={formData.title || ''}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className={inputClass + " mb-4"}
               required
-            />
-            <input
-              type="text"
-              placeholder="Synonyms (comma-separated)"
-              value={formData.synonym?.join(', ') || ''}
-              onChange={(e) => setFormData({ ...formData, synonym: e.target.value.split(',').map(s => s.trim()).filter(s => s) })}
-              className={inputClass + " mb-4"}
             />
             <textarea
-              placeholder="Example"
-              value={formData.example || ''}
-              onChange={(e) => setFormData({ ...formData, example: e.target.value })}
-              className={inputClass + " mb-4 min-h-24"}
+              placeholder="Content"
+              value={formData.content || ''}
+              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+              className={inputClass + " min-h-24"}
               required
-            />
-            <input
-              type="text"
-              placeholder="Source Verb (optional)"
-              value={formData.source_verb || ''}
-              onChange={(e) => setFormData({ ...formData, source_verb: e.target.value })}
-              className={inputClass}
             />
           </>
         );
