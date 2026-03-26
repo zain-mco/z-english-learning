@@ -129,7 +129,7 @@ export default function HomePage() {
               <p className="text-gray-500 text-lg">No {activeTab} found matching &quot;{searchQuery}&quot;</p>
             </div>
           ) : activeTab === 'notes' ? (
-            <NotesPanel notes={filteredItems} onRefresh={fetchItems} />
+            <NotesPanel notes={filteredItems} />
           ) : (
             <CardGrid items={filteredItems} type={activeTab} />
           )}
