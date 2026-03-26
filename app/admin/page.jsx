@@ -11,7 +11,7 @@ import Papa from 'papaparse';
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState('words');
+  const [activeTab, setActiveTab] = useState('notes');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -437,11 +437,11 @@ export default function AdminPage() {
                 let existingItem = null;
 
                 // Check for existing record based on table type
-                if (activeTab === 'words') {
+                if (activeTab === 'notes') {
                   const { data } = await supabase
                     .from(activeTab)
                     .select('*')
-                    .eq('word', item.word)
+                    .eq('title', item.title)
                     .single();
                   existingItem = data;
                 } else if (activeTab === 'verbs') {
