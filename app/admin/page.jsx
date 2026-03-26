@@ -232,10 +232,11 @@ export default function AdminPage() {
 
     try {
       if (editingItem) {
-        // Update existing item
+        // Update existing item - strip out id and created_at which can't be updated
+        const { id, created_at, ...updateData } = formData;
         const { error } = await supabase
           .from(activeTab)
-          .update(formData)
+          .update(updateData)
           .eq('id', editingItem.id);
         if (error) throw error;
       } else {
