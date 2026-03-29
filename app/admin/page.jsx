@@ -169,7 +169,7 @@ export default function AdminPage() {
       // Find duplicates based on table type
       for (const item of sortedItems) {
         let key;
-        
+
         if (activeTab === 'notes') {
           key = item.title?.toLowerCase();
         } else if (activeTab === 'verbs') {
@@ -597,8 +597,8 @@ export default function AdminPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === tab
-                  ? 'bg-gradient-to-r from-primary to-emerald-600 text-white shadow-lg shadow-primary/30'
-                  : 'text-gray-600 hover:bg-white/80 hover:shadow-md'
+                ? 'bg-gradient-to-r from-primary to-emerald-600 text-white shadow-lg shadow-primary/30'
+                : 'text-gray-600 hover:bg-white/80 hover:shadow-md'
                 }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -645,8 +645,8 @@ export default function AdminPage() {
             onClick={handleDeleteSelected}
             disabled={selectedItems.length === 0}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all shadow-md ${selectedItems.length === 0
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600 text-white hover:scale-105 hover:shadow-lg'
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-orange-500 hover:bg-orange-600 text-white hover:scale-105 hover:shadow-lg'
               }`}
           >
             <Trash2 size={20} />
